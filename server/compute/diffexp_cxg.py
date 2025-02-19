@@ -106,7 +106,7 @@ def diffexp_ttest_from_mean_var(meanA, varA, nA, meanB, varB, nB, top_n, diffexp
     stats_to_sort = tscores
     # find all with lfc > cutoff
     lfc_above_cutoff_idx = np.nonzero(np.abs(logfoldchanges) > diffexp_lfc_cutoff)[0]
-
+    indices = np.indices(stats_to_sort.shape)[0]  # define all indices for all_genes
     # derive sort order
     if lfc_above_cutoff_idx.shape[0] > top_n * 2:
         # partition top N
@@ -130,6 +130,11 @@ def diffexp_ttest_from_mean_var(meanA, varA, nA, meanB, varB, nB, top_n, diffexp
     pvals_top_n = pvals[sort_order]
     pvals_adj_top_n = pvals_adj[sort_order]
 
+    #apply cutoff for all_genes as the cutoff is applied in the code before
+    all_genes_filtered_idx = np.nonzero(np.abs(logfoldchanges) > diffexp_lfc_cutoff)[0]
+    # sort indices for all_genes
+    sorted_idx = np.argsort(stats_to_sort[all_genes_filtered_idx])[::-1]  # Sort descending
+    sorted_all_genes_idx = all_genes_filtered_idx[sorted_idx]  # Apply sorting to original indices
     # varIndex, logfoldchange, pval, pval_adj
     result = {
         "positive": [
@@ -138,6 +143,11 @@ def diffexp_ttest_from_mean_var(meanA, varA, nA, meanB, varB, nB, top_n, diffexp
         "negative": [
             [sort_order[i], logfoldchanges_top_n[i], pvals_top_n[i], pvals_adj_top_n[i]]
             for i in range(-1, -1 - top_n, -1)
+        ],
+         "all_genes": [
+            [sorted_all_genes_idx[i], logfoldchanges[sorted_all_genes_idx[i]], 
+            pvals[sorted_all_genes_idx[i]], pvals_adj[sorted_all_genes_idx[i]]]
+            for i in range(len(sorted_all_genes_idx))
         ],
     }
 

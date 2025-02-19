@@ -19,8 +19,10 @@ function DiffexpButtons(props: DiffexpButtonsProps): JSX.Element {
 
   const {
     computeDiffExp,
+    downloadDiffExpAllGenes,
     warnMaxSizeExceeded,
     tipMessageWarn,
+    tipMessageDownload,
     haveBothCellSets,
     tipMessage,
   } = useConnect({
@@ -49,6 +51,20 @@ function DiffexpButtons(props: DiffexpButtonsProps): JSX.Element {
           fill
           onClick={computeDiffExp}
         />
+      </Tooltip>
+      <Tooltip // new Tolltip with description
+        content={warnMaxSizeExceeded ? tipMessageWarn : tipMessageDownload}
+        position="bottom"
+        hoverOpenDelay={globals.tooltipHoverOpenDelayQuick}
+        intent={warnMaxSizeExceeded ? "danger" : "none"}
+      >
+        <AnchorButton // added button
+            disabled={!differential.haveDEA}  // disabled until computeDiffExp has been clicked 
+            intent={warnMaxSizeExceeded ? "danger" : "primary"}
+            data-testid="diffexp-button-all-genes" // necessary for tests?
+            icon="download" // Updated icon for download
+            onClick={downloadDiffExpAllGenes} // initiating the download -> connect.ts
+          />
       </Tooltip>
     </ButtonGroup>
   );

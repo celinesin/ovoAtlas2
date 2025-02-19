@@ -6,6 +6,8 @@ export interface DifferentialState {
   error: Error | string | null;
   celllist1: LabelArray | null;
   celllist2: LabelArray | null;
+  haveDEA: boolean | false; // boolean to save whether DEA has been done already
+  downloadAll: { allGenes: any[] } | null; // save all DE genes 
 }
 
 const Differential = (
@@ -14,6 +16,8 @@ const Differential = (
     error: null,
     celllist1: null,
     celllist2: null,
+    haveDEA: false,  // saves if DEA was triggered
+    downloadAll: null // list where all_genes are saved
   },
   action: AnyAction
 ) => {
@@ -28,6 +32,7 @@ const Differential = (
       return {
         ...state,
         error: null,
+        haveDEA: true, // set to true, so that the download is possible 
         loading: false,
       };
     case "request differential expression error":
@@ -40,6 +45,12 @@ const Differential = (
       return {
         ...state,
         celllist1: action.data,
+      };
+     // Update state to store the allGenes data separately.
+    case "store allGenes separately":
+      return {
+        ...state,
+        downloadAll: action.data, 
       };
     case "store current cell selection as differential set 2":
       return {

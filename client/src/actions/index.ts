@@ -448,6 +448,21 @@ const requestDifferentialExpression =
           ]
         );
       }
+      // save all genes seperately in the same manner as positive & negative
+      const downloadAll = { all_genes: []}
+
+      for (const polarity of Object.keys(
+        downloadAll
+      ) as (keyof typeof downloadAll)[]) {
+        downloadAll[polarity] = response[polarity].map(
+          // TODO: swap out with type defined at genesets reducer when made
+          (v: [LabelIndex, number, number, number]) => [
+            // @ts-expect-error (seve): fix downstream lint errors as a result of detailed app store typing
+            varIndex.at(v[0], varIndexName),
+            ...v.slice(1),
+          ]
+        );
+      }
 
       track(EVENTS.EXPLORER_DIFF_EXP_BUTTON_CLICKED, {
         cellCount1,
@@ -455,7 +470,14 @@ const requestDifferentialExpression =
         timeToComplete: performance.now() - startMs,
         status: "success",
       });
-
+      
+      /* dispatch action to store allGenes data separately in the Redux store.
+       This action is used to save the `downloadAll` data (which contains the `all_genes` array) 
+      in a specific part of the state, making it accessible for other parts of the application. */
+      dispatch({ 
+        type: "store allGenes separately", 
+        data: downloadAll 
+      });
       /* then send the success case action through */
       return dispatch({
         type: "request differential expression success",
@@ -475,6 +497,50 @@ const requestDifferentialExpression =
       });
     }
   };
+  /**
+ * Downloads all genes data in TSV format. The function checks if the data is available,
+ * formats it into a TSV string, creates a downloadable file, and triggers the download.
+ * If no data is available, it logs a warning and exits early.
+ */
+  const requestDownloadAllGenes = () => 
+    async (_dispatch: AppDispatch, getState: GetState) => {
+      try {
+        // track event for analytics purposes
+        track(EVENTS.EXPLORER_DOWNLOAD_ALL_GENES_BUTTON_CLICKED, {});
+        // retrieve the differential expression data from the Redux store
+        const { differential } = getState();
+
+        // check if downloadAll is empty
+        if (!differential.downloadAll?.all_genes?.length) {
+          console.warn("No allGenes data available for download.");
+          return;
+        }
+  
+        // header for the TSV file
+        const header = "Gene\tLogFoldChange\tp-value\tadj p-value";
+
+        // convert the array to TSV format
+        const tsvRows = differential.downloadAll.all_genes.map((row: any[]) => row.join("\t"));
+        const tsvStr = [header, ...tsvRows].join("\n");
+
+        // create and download the TSV file
+        const blob = new Blob([tsvStr], { type: "text/tab-separated-values" });
+        const link = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        const dateString = new Date().toLocaleString();
+
+        a.href = link;
+        a.download = `differential_expression_all_genes_${dateString}.tsv`; // add a timestamp to file name 
+        document.body.appendChild(a);
+        a.click(); // trigger download
+        document.body.removeChild(a); // clean up DOM
+        
+        URL.revokeObjectURL(link); // revoke object URL to free up memory
+      } catch (error) {
+        console.error("Failed to download all genes:", error);
+      }
+    };
 
 /**
  * Check local storage for flag indicating that the work in progress toast should be displayed.
@@ -588,6 +654,7 @@ function fetchJson<T>(pathAndQuery: string, apiPrefix?: string): Promise<T> {
 export default {
   doInitialDataLoad,
   requestDifferentialExpression,
+  requestDownloadAllGenes, // add new Request for Downloading all diffexp. genes
   requestSingleGeneExpressionCountsForColoringPOST,
   requestUserDefinedGene,
   checkExplainNewTab,
