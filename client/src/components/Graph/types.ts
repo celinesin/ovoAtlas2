@@ -43,6 +43,9 @@ export type GraphState = {
   modelInvTF: ReadonlyMat3;
   testImageSrc: string | null;
   isImageLayerInViewport: boolean;
+  hoveredPointIndex: number | null;
+  hoveredPointScreen: [number, number] | null;
+  tooltipText: string | null;
 };
 
 export interface StateProps {
